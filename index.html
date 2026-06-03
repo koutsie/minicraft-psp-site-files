@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Play Minicraft PSP directly in your browser">
+<title>Minicraft PSP</title>
+<link rel="icon" type="image/png" href="ACH_GEM_PICKAXE_Best_Pick.png">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;font-family:sans-serif}
+canvas{width:100vw;height:100vh;display:block}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;flex-direction:column;justify-content:center;align-items:center;color:#fff;z-index:100}
+#startBtn{padding:15px 30px;background:#333;color:#eee;font:bold 24px "Courier New",monospace;text-transform:uppercase;border-top:4px solid #777;border-left:4px solid #777;border-bottom:4px solid #111;border-right:4px solid #111;cursor:pointer;user-select:none;box-shadow:2px 2px 0 #000;transition:filter .1s}
+#startBtn:hover{filter:brightness(1.2)}
+#startBtn:active{border-top-color:#111;border-left-color:#111;border-bottom-color:#777;border-right-color:#777;padding:17px 28px 13px 32px;box-shadow:1px 1px 0 #000}
+#progress{width:300px;height:20px;display:none;margin-top:20px;accent-color:#4a4}
+</style>
+</head>
+<body>
+<div id="overlay">
+<div id="startBtn" onclick="startEmulator()">Click here to play Minicraft</div>
+<progress id="progress" value="0" max="100"></progress>
+</div>
+<canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+<script>
+document.addEventListener('fullscreenchange',function(){
+if(document.fullscreenElement&&navigator.keyboard&&navigator.keyboard.lock)
+navigator.keyboard.lock(['Escape']).catch(function(){});
+});
+var M='/home/web_user/.config/ppsspp',D='/idbfs';
+function mkdirSafe(p){try{FS.mkdir(p)}catch(e){}}
+function cpFile(s,d){try{FS.writeFile(d,FS.readFile(s))}catch(e){}}
+function cpDir(src,dst){
+try{
+var ls=FS.readdir(src);
+mkdirSafe(dst);
+for(var i=0;i<ls.length;i++){
+if(ls[i]==='.'||ls[i]==='..')continue;
+cpFile(src+'/'+ls[i],dst+'/'+ls[i]);
+}
+}catch(e){}
+}
+var Module={
+setStatus:function(t){
+var m=t.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/),p=document.getElementById('progress');
+if(m){p.value=parseInt(m[2]);p.max=parseInt(m[4])}
+},
+onRuntimeInitialized:function(){document.getElementById('overlay').style.display='none'},
+preRun:[function(){
+mkdirSafe(D);
+try{FS.mount(IDBFS,{},D)}catch(e){}
+addRunDependency('idbfs');
+FS.syncfs(true,function(err){
+['/home','/home/web_user','/home/web_user/.config',M,M+'/PSP',M+'/PSP/SYSTEM',M+'/PSP/PPSSPP_STATE'].forEach(mkdirSafe);
+cpFile(D+'/ppsspp.ini',M+'/PSP/SYSTEM/ppsspp.ini');
+if(!FS.analyzePath(M+'/PSP/SYSTEM/ppsspp.ini').exists)
+try{FS.writeFile(M+'/PSP/SYSTEM/ppsspp.ini','[Control]\nTouchButtonHideSeconds = 0\n')}catch(e){}
+cpFile(D+'/MinicraftSave.dat',M+'/MinicraftSave.dat');
+cpDir(D+'/PPSSPP_STATE',M+'/PSP/PPSSPP_STATE');
+removeRunDependency('idbfs');
+});
+}],
+postRun:[function(){
+setInterval(function(){
+cpFile(M+'/MinicraftSave.dat',D+'/MinicraftSave.dat');
+cpFile(M+'/PSP/SYSTEM/ppsspp.ini',D+'/ppsspp.ini');
+cpDir(M+'/PSP/PPSSPP_STATE',D+'/PPSSPP_STATE');
+FS.syncfs(false,function(){});
+},3000);
+}],
+print:function(){},
+printErr:function(t){console.error(t)},
+canvas:document.getElementById('canvas'),
+arguments:[M+'/PSP/GAME/MinicraftOptimized/EBOOT.PBP']
+};
+function startEmulator(){
+document.getElementById('startBtn').style.display='none';
+document.getElementById('progress').style.display='block';
+var t=Date.now(),s=document.createElement('script');
+s.src='game.js?v='+t;
+s.onload=function(){var e=document.createElement('script');e.src='PPSSPPSDL.js?v='+t;document.body.appendChild(e)};
+document.body.appendChild(s);
+}
+</script>
+</body>
+</html>
