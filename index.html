@@ -6,6 +6,19 @@
 <meta name="description" content="Play Minicraft PSP directly in your browser">
 <title>Minicraft PSP</title>
 <link rel="icon" type="image/png" href="ACH_GEM_PICKAXE_Best_Pick.png">
+<script>
+if('serviceWorker' in navigator){
+navigator.serviceWorker.register('sw.js').then(function(reg){
+if(!window.crossOriginIsolated){
+reg.addEventListener('updatefound',function(){
+var w=reg.installing;
+if(w)w.addEventListener('statechange',function(){if(w.state==='activated')location.reload()});
+});
+if(reg.active&&!navigator.serviceWorker.controller)location.reload();
+}
+});
+}
+</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#000;overflow:hidden;font-family:sans-serif}
