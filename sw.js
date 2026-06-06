@@ -1,4 +1,4 @@
-var CACHE='minicraft-v2';
+var CACHE='minicraft-v10';
 var IMMUTABLE=/\.(wasm|js|data|mem|png|ico|webp)$/i;
 
 function addHeaders(r){
